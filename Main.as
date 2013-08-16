@@ -45,10 +45,6 @@ package
 		private var _pushing:Boolean;
 		private var _iteration:int;
 		
-		private var _bitData:BitmapData;
-
-		private var scanX:int;
-		
 		public function Main():void
 		{
 			if (stage)
@@ -61,8 +57,6 @@ package
 		{
 			removeEventListener(Event.ADDED_TO_STAGE, init);
 			this.mouseEnabled = false;
-			
-			//stage.mouseEnabled = false;
 			// entry point
 			stage.align = StageAlign.TOP_LEFT;
 			stage.scaleMode = StageScaleMode.NO_SCALE;
@@ -85,13 +79,10 @@ package
 			_logo.x = stage.stageWidth / 2 - _logo.width / 2;
 			_logo.y = stage.stageHeight / 8;
 			addChild(_logo);
-			_bitData = new BitmapData(stage.stageWidth, stage.stageHeight, false, 0x000000);
-			_bitData.draw(stage);
 			
 			_particleManager = new ParticleController();
 			addChild(_particleManager);
 			setChildIndex(_particleManager, numChildren - 1);
-			scanX = 0;
 			
 			addEventListener(Event.ENTER_FRAME, mainLoop);
 		}
@@ -115,17 +106,10 @@ package
 			_player = _manager.generateCircles(Settings.getSettings().minColor, Settings.getSettings().maxColor, 15, 30, 20, 
 			Settings.getSettings().enemyNumber);
 			_pushing = true;
-			//stage.quality = "low";
-			//addChild(_particleManager);
 			addChild(_manager);
 			addEventListener(Event.ENTER_FRAME, gameLoop);
-			//stage.addEventListener(MouseEvent.MOUSE_MOVE, onMouseMove, true);
 			stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
 			stage.addEventListener(MouseEvent.MOUSE_UP, onMouseUp);
-			//addEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
-			//addEventListener(MouseEvent.MOUSE_UP, onMouseUp);
-
-			//drawGrid();
 		}
 
 		private function onMouseDown(e:MouseEvent):void
@@ -158,36 +142,29 @@ package
 			_startButton = null;
 			_particleManager = null;
 			LoadConfigXML("config.txt");
-			//var start:Node = new Node();
-			//var end:Node = start;
-			//for (var i:int = 0; i < 100; i++) {
-				//var addNode:Node = new Node();
-				//end.push(addNode);
-				//end = addNode;
-			//}
-			//trace(start);
-			//trace(end);
-			//end = null;
 		}
 		
 		public function gameLoop(e:Event):void
 		{
 			if (_pushing) {
+				//place objects without intersections when game starts
 				_pushing = _manager.pushCircles(20);
 				_manager.calculatePositions();
 			}
 			else {
-				//var time:int = getTimer();
+				//every 50 eteration add new enemy object to game
+				//and try to place it, when it haven't intersections to others
 				_iteration++;
-				if (_iteration > 50){_manager.spawnObject(); _iteration = 0;}
+				if (_iteration > 50) { _manager.spawnObject(); _iteration = 0; }
+				//add force to player object
 				addForce();
-				//_manager.pushCircles(20);
-				//_manager.calculatePositions();
+				//update objects state
 				_manager.simulate();
-				//trace(getTimer() - time);
 			}	
+			//get game state
 			var gameState:int = _manager.getGameState;
 			if (gameState > 0) {
+				//clean up and open gameOver or victory screen
 				removeEventListener(Event.ENTER_FRAME, gameLoop);
 				stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
 				stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseUp);
@@ -201,50 +178,40 @@ package
 			//_particleManager.addCircleParticle(Math.random() * _bitData.width, Math.random() * _bitData.height, 0x00FFFF * ( 1 - Math.random() * 0.5));
 		}
 		
+		/**
+		 * loop for main menu, victory and lose screen
+		 * @param	e
+		 */
 		public function mainLoop(e:Event):void
 		{
-			//manager.simulate();
-			//add particle manager
-			
+			//update particles
+			//and add new particle
 			_particleManager.update();
 			_particleManager.addCircleParticle(Math.random() * _bitData.width, Math.random() * _bitData.height, 0x00FFFF * ( 1 - Math.random() * 0.5));
-			//_particleManager.addParticle(particle);
-			
-			/*scanX += 6;
-			
-			if (scanX > stage.stageWidth) scanX = 0;
-			
-			for (var ypos:Number = 0; ypos < _bitData.height; ypos += 5) {
-				var xpos:Number = scanX;
-				if (xpos > 0) */
-				//for (var i:int = 0; i < 70; i++ ){
-					//
-					//var xpos:Number = Math.random() * _bitData.width;
-					//var ypos:Number = Math.random() * _bitData.height;
-					//var col:Number = _bitData.getPixel(xpos, ypos);
-					//
-					//trace(col);
-					//if (col > 0x000000 && col < 0x002BFF) {
-						//particle = new SpaceParticle();
-						//particle.x = xpos;/*Math.random() * stage.stageWidth;*/
-						//particle.y = ypos;/* Math.random() * stage.stageHeight;*/
-						//_particleManager.addParticle(particle);
-					//}
-				//}
 		}
 		
+		/**
+		 * load settings file
+		 * @param	configPath
+		 */
 		public function LoadConfigXML(configPath:String):void
 		{
+			//get path to config
 			var xmlURL:String = configPath;
  
 			var configRequest:URLRequest = new URLRequest();
 			configRequest.url = xmlURL;
  
+			//loading config file
 			var assetLoader:URLLoader = new URLLoader();
 			assetLoader.addEventListener(Event.COMPLETE, parseConfig);
 			assetLoader.load(configRequest);
 		}
 		
+		/**
+		 * parse config, set settings and start game
+		 * @param	e
+		 */
 		private function parseConfig(e:Event):void {
 			Settings.getSettings().parseConfig(e.target.data);
 			initGameScreen();
