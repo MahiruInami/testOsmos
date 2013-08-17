@@ -57,7 +57,6 @@ package
 		{
 			removeEventListener(Event.ADDED_TO_STAGE, init);
 			this.mouseEnabled = false;
-			// entry point
 			stage.align = StageAlign.TOP_LEFT;
 			stage.scaleMode = StageScaleMode.NO_SCALE;
 			
@@ -68,6 +67,7 @@ package
 		{
 			_render = new Sprite();
 			addChild(_render);
+			_mouseDown = false;
 			
 			_startButton = new Button();
 			_startButton.x = stage.stageWidth / 2 - _startButton.width / 2;
@@ -104,7 +104,6 @@ package
 			_iteration = 0;
 			_manager = new ObjectManager();
 			_manager.initGame();
-			_pushing = true;
 			addChild(_manager);
 			addEventListener(Event.ENTER_FRAME, gameLoop);
 			stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
@@ -131,7 +130,7 @@ package
 			_particleManager = null;
 			LoadConfigXML("config.txt");
 		}
-		
+
 		public function gameLoop(e:Event):void
 		{
 			_manager.update();
@@ -139,11 +138,9 @@ package
 				_manager.addForceToPlayer(new Point(stage.mouseX, stage.mouseY));
 			if (_manager.gameState == Settings.WIN)
 			{
-				//clean up and open gameOver or victory screen
 				removeEventListener(Event.ENTER_FRAME, gameLoop);
 				stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
 				stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseUp);
-				//this.removeChildren();
 				_manager = null;
 				initVictoryScreen();
 			}else
@@ -151,7 +148,6 @@ package
 				removeEventListener(Event.ENTER_FRAME, gameLoop);
 				stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
 				stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseUp);
-				//this.removeChildren();
 				_manager = null;
 				initGameOverScreen();
 			}

@@ -7,6 +7,7 @@ package
 	import flash.geom.Point;
 	import flash.display.Shape;
 	import flash.geom.Rectangle;
+	import flash.utils.getTimer;
 	
 	/**
 	 * ...
@@ -29,18 +30,13 @@ package
 			_objects = new Vector.<LifeForm>();
 			_newObjects = new Vector.<LifeForm>();
 			_rect = new Rectangle(0, 0, 1200, 800);
-			_bitmapData  = new BitmapData(_rect.width, _rect.height, true, 0x000000);
+			_bitmapData = new BitmapData(_rect.width, _rect.height, true, 0x000000);
 		}
 		
-		public function update():void
+		public function update(player:LifeForm):void
 		{
-			for (var i:uint = 0; i < _objects.length; i++)
-			{
-				_objects[i].update();
-				_objects[i].checkRange(_rect);
-			}
-			resolveCollisions();
-			placeBOWithoutIntersections(2000);
+			simulate(player);
+			placeBOWithoutIntersections(4000);
 		}
 		
 		public function updateColors(obj1:LifeForm, obj2:LifeForm):void
@@ -53,28 +49,23 @@ package
 			else
 				multiplayer = 1.5 - obj2.radius / obj1.radius;
 			var newColor:uint = getColorSum(Settings.getSettings().minColor, Settings.getSettings().maxColor, multiplayer, 1 - multiplayer);
-			if (newColor == obj2.color) return;
+			if (newColor == obj2.color)
+				return;
 			obj2.color = newColor;
-			
-			function getColorSum(color1:uint, color2:uint, color1Percent:Number, color2Percent:Number):uint
-			{
-				var r:Number = Math.min((color1 >> 16) * color1Percent + (color2 >> 16) * color2Percent, 255);
-				var g:Number = Math.min(((color1 & 0x00FF00) >> 8) * color1Percent + ((color2 & 0x00FF00) >> 8) * color2Percent, 255);
-				var b:Number = Math.min((color1 & 0x0000FF) * color1Percent + (color1 & 0x0000FF) * color2Percent, 255);
-				var sum:int = (r << 16) + (g << 8) + b;
-				return sum;
-			}
 		}
 		
-		public function updateEnemyColors(player:LifeForm):void
+		protected function getColorSum(color1:uint, color2:uint, color1Percent:Number, color2Percent:Number):uint
 		{
-			for (var i:int = 0; i < _objects.length; i++)
-				if (_objects[i] != player)
-					updateColors(player, _objects[i]);
+			var r:Number = Math.min((color1 >> 16) * color1Percent + (color2 >> 16) * color2Percent, 255);
+			var g:Number = Math.min(((color1 & 0x00FF00) >> 8) * color1Percent + ((color2 & 0x00FF00) >> 8) * color2Percent, 255);
+			var b:Number = Math.min((color1 & 0x0000FF) * color1Percent + (color1 & 0x0000FF) * color2Percent, 255);
+			var sum:int = (r << 16) + (g << 8) + b;
+			return sum;
 		}
-		
+
 		public function draw():BitmapData
 		{
+			_bitmapData.lock();
 			_bitmapData.fillRect(_rect, 0x000000);
 			for (var i:int = _objects.length - 1; i >= 0; i--)
 			{
@@ -82,7 +73,7 @@ package
 				_bitmapData.copyPixels(obj.bitmapData, obj.rect, new Point(obj.x - obj.radius - 15, obj.y - obj.radius - 15), null, null, true);
 				
 			}
-			//_bitmapData.applyFilter(_bitmapData, _rect, new Point(), new GlowFilter(0x00FFFF, 0.9, 20, 20, 2, 4));
+			_bitmapData.unlock();
 			return _bitmapData;
 		}
 		
@@ -91,7 +82,7 @@ package
 			var lifeForm:LifeForm = new LifeForm();
 			lifeForm.x = Math.random() * _rect.width;
 			lifeForm.y = Math.random() * _rect.height;
-			lifeForm.isRandomMovement = true;
+			//lifeForm.isRandomMovement = true;
 			_objects.push(lifeForm);
 			return lifeForm;
 		}
@@ -121,7 +112,7 @@ package
 			distance.y = -1;
 			return distance;
 		}
-
+		
 		public function detectCollision(obj1:LifeForm, obj2:LifeForm):int
 		{
 			var distance:Point = collision(obj1, obj2);
@@ -132,35 +123,49 @@ package
 				var atan:Number = Math.atan2(obj2.y - obj1.y, obj2.x - obj1.x);
 				if (obj1.volume > obj2.volume)
 				{
-					if (obj2.volume < 150 || obj1.radius > distance.length + obj2.radius) {
+					if (obj2.volume < 150 || obj1.radius > distance.length + obj2.radius)
+					{
 						obj1.food += obj2.food;
 						obj1.food += obj2.volume;
 						obj2.food = 0;
 						obj2.isDead = true;
 						return -1;
-					}else {
-						if (obj2.food > 0){
+					}
+					else
+					{
+						if (obj2.food > 0)
+						{
 							obj1.food += obj2.food;
 							obj2.food = 0;
-						}else{
+						}
+						else
+						{
 							obj1.food += obj2.volume * 0.1;
 							obj2.food -= obj2.volume * 0.1;
 						}
 						obj2.forceX += Math.cos(atan) / 20;
 						obj2.forceY += Math.sin(atan) / 20;
 					}
-				}else {
-					if (obj1.volume < 150 || obj2.radius > distance.length + obj1.radius) {
+				}
+				else
+				{
+					if (obj1.volume < 150 || obj2.radius > distance.length + obj1.radius)
+					{
 						obj2.food += obj1.food;
 						obj2.food += obj1.volume;
 						obj1.food = 0;
 						obj1.isDead = true;
 						return 1;
-					}else {
-						if (obj1.food > 0){
+					}
+					else
+					{
+						if (obj1.food > 0)
+						{
 							obj2.food += obj1.food;
 							obj1.food = 0;
-						}else{
+						}
+						else
+						{
 							obj2.food += obj1.volume * 0.1;
 							obj1.food -= obj1.volume * 0.1;
 						}
@@ -172,11 +177,9 @@ package
 			return 0;
 		}
 		
-		
-		
 		public function clearObjects():void
 		{
-			_objects = new Vector.<LifeForm>();
+			_objects = new <LifeForm>[];
 		}
 		
 		public function placeBOWithoutIntersections(minDistance:Number):void
@@ -190,9 +193,9 @@ package
 						var lifeForm:LifeForm = _newObjects.splice(i, 1)[0];
 						_objects.push(lifeForm);
 						lifeForm.radius = 1;
-						lifeForm.food += 100 + Math.random() * 3000;
+						lifeForm.food += 100 + Math.random() * 15000;
 						break;
-					}	
+					}
 			}
 		}
 		
@@ -212,12 +215,16 @@ package
 			dist.x = obj1.x - obj2.x;
 			dist.y = obj1.y - obj2.y;
 			var radius:Number = obj1.radius + obj2.radius;
+			var minSepSq:Number = minDistanse * minDistanse;
 			
-			var length: Number = dist.x * dist.x + dist.y * dist.y - minDistanse; 
-
+			var length:Number = dist.x * dist.x + dist.y * dist.y - minSepSq;
+			minSepSq = Math.min(length, minSepSq);
+					
+			length -= minSepSq;
+			
 			if (length < radius * radius)
 			{
-				dist.normalize(0.5);
+				dist.normalize(1);
 				if (pushSecond)
 				{
 					obj2.x -= dist.x;
@@ -228,7 +235,7 @@ package
 					obj1.x += dist.x;
 					obj1.y += dist.y;
 				}
-				return true;	
+				return true;
 			}
 			return false;
 		}
@@ -248,28 +255,74 @@ package
 			}
 			return pushed;
 		}
+		
+		private function qSort(obj:Vector.<LifeForm>, min:int, max:int):void {
+			if (min >= max) return;
+			var i:int = min;
+			var j:int = max;
+			var x:LifeForm = obj[Math.round((min + max) / 2)];
+			var temp:LifeForm;
+			
+			do{
+				while(obj[i].x - obj[i].radius < x.x - x.radius) i++;
+				while(obj[j].x - obj[j].radius > x.x - x.radius) j--;
+				if(i <= j){
+					temp = obj[j];
+					obj[j] = obj[i];
+					obj[i] = temp;
+					i++; j--;
+				}
+			}while(i < j);
+			if(min < j) qSort(obj, min, j);
+			if(i < max) qSort(obj, i, max);
+		}
 
-		public function sort():void
+		protected function resolveCollisionBruteForce(player:LifeForm):void
 		{
-			var compare:Function = function(obj1:LifeForm, obj2:LifeForm):Number
+			var i:int, j:int;
+			for (i = 0; i < _objects.length - 1; i++)
 			{
-				if (obj1.x - obj1.radius < obj2.x - obj2.radius)
-					return -1;
-				else
-					return 1;
-			};
-			_objects.sort(compare);
+				_objects[i].update();
+				_objects[i].checkRange(_rect);
+				if (_objects[i] != player)
+					updateColors(player, _objects[i]);
+					
+				for (j = i + 1; j < _objects.length; j++)
+				{
+					var obj1:LifeForm = _objects[i];
+					var obj2:LifeForm = _objects[j];
+					var collision:int = detectCollision(obj1, obj2);
+					if (collision == -1)
+					{
+						_objects.splice(i, 1);
+						i--;
+						break;
+					}
+					else if (collision == 1)
+					{
+						_objects.splice(j, 1);
+						j--;
+						continue;
+					}
+				}
+			}
 		}
 		
-		protected function resolveCollisions():void
+		protected function simulate(player:LifeForm):void
 		{
 			var i:int, j:int, indexCorrection:int = 0;
 			var intervals:Array = [];
 			var dist:Point = new Point();
 			var radius:Number, length:Number;
-			sort();
+			//qsort is much faster than default vector.sort
+			qSort(_objects, 0, _objects.length - 1);
 			for (i = 0; i < _objects.length; i++)
 			{
+				_objects[i].update();
+				_objects[i].checkRange(_rect);
+				if (_objects[i] != player)
+					updateColors(player, _objects[i]);
+
 				var newInterval:Interval = new Interval();
 				newInterval.b = _objects[i].x - _objects[i].radius;
 				newInterval.e = _objects[i].x + _objects[i].radius;

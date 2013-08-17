@@ -77,7 +77,6 @@ package
 				//find enemy number
 				regExp = /enemyNumber:\s\d*/g;
 				params = userSettings[i].match(regExp);
-				trace("enemy");
 				for (j = 0; j < params.length; j++) {
 					//take parameters
 					regExp = /\d+/g;
@@ -85,10 +84,6 @@ package
 					_enemyNumber = values[0];
 				}
 			}
-			trace(_playerColor);
-			trace(_minColor);
-			trace(_maxColor);
-			trace(_enemyNumber);
 		}
 		
 	}
