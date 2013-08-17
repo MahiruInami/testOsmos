@@ -58,6 +58,7 @@ package
 			format.size = 18;
 			_text.setTextFormat(format);
 			_text.width = _text.textWidth + 5;
+			_text.height = this.height / 2 + 5;
 			_text.x = this.width / 2 - _text.width / 2;
 			_text.y = this.height / 4;
 			addChild(_text);

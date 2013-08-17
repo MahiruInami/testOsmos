@@ -16,9 +16,8 @@ package particle
 		public function ParticleController() 
 		{
 			_particles = new Vector.<Particle>();
-			mouseEnabled = false;
-			mouseChildren = false;
-			
+			this.mouseChildren = false;
+			this.mouseEnabled = false;
 		}
 		
 		public function addCircleParticle(xPos:int, yPos:int, color:uint = 0xFFFFFF):void

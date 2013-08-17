@@ -3,6 +3,7 @@
 	import flash.display.BitmapData;
 	import flash.display.Shape;
 	import flash.filters.GlowFilter;
+	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	//import flash.display.Shape;
@@ -46,6 +47,8 @@
 		protected var _color:uint;
 		protected var shape:Shape = new Shape();
 		protected var glow:GlowFilter = new GlowFilter();
+		protected var matrix:Matrix = new Matrix();
+		protected var oldRadius:Number;
 		
 		public function get color():uint { return _color; }
 		public function set color(newColor:uint):void { _color = newColor; changeBitmapData(); }
@@ -61,6 +64,7 @@
 			x = 0;
 			y = 0;
 			radius = 20;
+			oldRadius = radius;
 			friction = 0.98;
 			forceX = 0;
 			forceY = 0;
@@ -71,10 +75,9 @@
 			volume = radius * radius * Math.PI;
 			isRandomMovement = false;
 			rect = new Rectangle(0, 0, (radius << 1) + 30, (radius << 1) + 30);
-			trace(rect);
 			shape = new Shape();
 			glow = new GlowFilter(0xFFFFFF * Math.random(), 0.9, 15, 15, 2, 4);
-			bitmapData = new BitmapData((radius << 1), (radius << 1), true, 0x000000);
+			bitmapData = new BitmapData(rect.width, rect.height, true, 0x000000);
 			
 			changeBitmapData();
 		}
@@ -120,30 +123,36 @@
 			grow();
 			if (isRandomMovement)
 			{
-				speedX += (-1 + Math.random() * 2) * 0.1;
-				speedY += (-1 + Math.random() * 2) * 0.1;
+				forceX += (-1 + Math.random() * 2) * 0.05;
+				forceY += (-1 + Math.random() * 2) * 0.05;
 			}
 		}
 		
 		protected function changeBitmapData():void
 		{
 			if (isNaN(radius)) return;
-			try{
-				bitmapData = new BitmapData(rect.width, rect.height, true, 0x000000);
-				bitmapData.fillRect(rect, 0x00000000);
-			}
-			catch (e:Error)
-			{
-				trace(rect, radius);
-				bitmapData = new BitmapData(1, 1, true, 0x000000);
-			}
-			
 			shape.graphics.clear();
 			shape.graphics.beginFill(color, 1);
 			shape.graphics.drawCircle(radius + 15, radius + 15, radius);
 			shape.graphics.endFill();
 			shape.filters = [ glow ];
+			bitmapData.lock();
+			try {
+				//if ((radius << 1) + 30 > rect.width)
+				//{
+					//rect.width = (radius << 2);
+					//rect.height = (radius << 2);
+					bitmapData = new BitmapData(rect.width, rect.height, true, 0x000000);
+				//}
+				bitmapData.fillRect(rect, 0x00000000);
+			}
+			catch (e:Error)
+			{
+				bitmapData = new BitmapData(1, 1, true, 0x000000);
+			}
 			bitmapData.draw(shape);
+			bitmapData.unlock();
+			//bitmapData.copyPixels(shape
 		}
 		
 		public function checkRange(rect:Rectangle):void
