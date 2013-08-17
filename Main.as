@@ -103,8 +103,9 @@ package
 		{
 			_iteration = 0;
 			_manager = new ObjectManager();
-			_player = _manager.generateCircles(Settings.getSettings().minColor, Settings.getSettings().maxColor, 15, 30, 20, 
-			Settings.getSettings().enemyNumber);
+			_manager.initGame();
+			//_player = _manager.generateCircles(Settings.getSettings().minColor, Settings.getSettings().maxColor, 15, 30, 20, 1);
+			//Settings.getSettings().enemyNumber);
 			_pushing = true;
 			addChild(_manager);
 			addEventListener(Event.ENTER_FRAME, gameLoop);
@@ -123,17 +124,6 @@ package
 			_mouseDown = false;
 		}
 
-		public function addForce():void
-		{
-			if (_mouseDown)
-			{
-				//var objPoint:Point = new Point(player.x, player.y);
-				//var degree:Number = Math.atan2(player.y - _cursorPosition.y, player.x - _cursorPosition.x);
-				_player.speed.x += (_player.x - stage.mouseX) * _force;
-				_player.speed.y += (_player.y - stage.mouseY) * _force;
-			}
-		}
-		
 		private function startNewGame(e:MouseEvent):void
 		{
 			_startButton.removeEventListener(MouseEvent.CLICK, startNewGame);
@@ -146,34 +136,37 @@ package
 		
 		public function gameLoop(e:Event):void
 		{
-			if (_pushing) {
+			_manager.update();
+			if (_mouseDown)
+				_manager.addForceToPlayer(new Point(stage.mouseX, stage.mouseY));
+			//if (_pushing) {
 				//place objects without intersections when game starts
-				_pushing = _manager.pushCircles(20);
-				_manager.calculatePositions();
-			}
-			else {
+				//_pushing = _manager.pushCircles(20);
+				//_manager.calculatePositions();
+			//}
+			//else {
 				//every 50 eteration add new enemy object to game
 				//and try to place it, when it haven't intersections to others
-				_iteration++;
-				if (_iteration > 50) { _manager.spawnObject(); _iteration = 0; }
+				//_iteration++;
+				//if (_iteration > 50) { /*_manager.spawnObject();*/ _iteration = 0; _player.eat(_player.volume); }
 				//add force to player object
-				addForce();
+				//addForce();
 				//update objects state
-				_manager.simulate();
-			}	
+				//_manager.simulate();
+			//}	
 			//get game state
-			var gameState:int = _manager.getGameState;
-			if (gameState > 0) {
+			//var gameState:int = _manager.getGameState;
+			//if (gameState > 0) {
 				//clean up and open gameOver or victory screen
-				removeEventListener(Event.ENTER_FRAME, gameLoop);
-				stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
-				stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseUp);
-				this.removeChildren();
-				if(gameState == 1)
-					initGameOverScreen();
-				else
-					initVictoryScreen();
-			}
+				//removeEventListener(Event.ENTER_FRAME, gameLoop);
+				//stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
+				//stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseUp);
+				//this.removeChildren();
+				//if(gameState == 1)
+					//initGameOverScreen();
+				//else
+					//initVictoryScreen();
+			//}
 			//_particleManager.update();
 			//_particleManager.addCircleParticle(Math.random() * _bitData.width, Math.random() * _bitData.height, 0x00FFFF * ( 1 - Math.random() * 0.5));
 		}
@@ -187,7 +180,7 @@ package
 			//update particles
 			//and add new particle
 			_particleManager.update();
-			_particleManager.addCircleParticle(Math.random() * _bitData.width, Math.random() * _bitData.height, 0x00FFFF * ( 1 - Math.random() * 0.5));
+			_particleManager.addCircleParticle(Math.random() * 1200, Math.random() * 800, 0x00FFFF * ( 1 - Math.random() * 0.5));
 		}
 		
 		/**
