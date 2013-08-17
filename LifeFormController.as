@@ -40,6 +40,37 @@ package
 				_objects[i].checkRange(_rect);
 			}
 			resolveCollisions();
+			placeBOWithoutIntersections(2000);
+		}
+		
+		public function updateColors(obj1:LifeForm, obj2:LifeForm):void
+		{
+			var multiplayer:Number;
+			if (obj1.radius > (obj2.radius << 1))
+				multiplayer = 1.0;
+			else if ((obj1.radius << 1) < obj2.radius)
+				multiplayer = 0.0;
+			else
+				multiplayer = 1.5 - obj2.radius / obj1.radius;
+			var newColor:uint = getColorSum(Settings.getSettings().minColor, Settings.getSettings().maxColor, multiplayer, 1 - multiplayer);
+			if (newColor == obj2.color) return;
+			obj2.color = newColor;
+			
+			function getColorSum(color1:uint, color2:uint, color1Percent:Number, color2Percent:Number):uint
+			{
+				var r:Number = Math.min((color1 >> 16) * color1Percent + (color2 >> 16) * color2Percent, 255);
+				var g:Number = Math.min(((color1 & 0x00FF00) >> 8) * color1Percent + ((color2 & 0x00FF00) >> 8) * color2Percent, 255);
+				var b:Number = Math.min((color1 & 0x0000FF) * color1Percent + (color1 & 0x0000FF) * color2Percent, 255);
+				var sum:int = (r << 16) + (g << 8) + b;
+				return sum;
+			}
+		}
+		
+		public function updateEnemyColors(player:LifeForm):void
+		{
+			for (var i:int = 0; i < _objects.length; i++)
+				if (_objects[i] != player)
+					updateColors(player, _objects[i]);
 		}
 		
 		public function draw():BitmapData
@@ -65,6 +96,19 @@ package
 			return lifeForm;
 		}
 		
+		public function createBufferLifeForm():void
+		{
+			var lifeForm:LifeForm;
+			if (_newObjects.length > 5)
+				lifeForm = _newObjects.shift();
+			else
+				lifeForm = new LifeForm();
+			lifeForm.x = Math.random() * _rect.width;
+			lifeForm.y = Math.random() * _rect.height;
+			lifeForm.isRandomMovement = true;
+			_newObjects.push(lifeForm);
+		}
+		
 		public function collision(obj1:LifeForm, obj2:LifeForm):Point
 		{
 			var distance:Point = new Point(obj1.x - obj2.x, obj1.y - obj2.y);
@@ -77,62 +121,7 @@ package
 			distance.y = -1;
 			return distance;
 		}
-		
-		public function placeObjectsWithoutIntersections(minDistance:Number):Boolean
-		{
-			for (var i:uint = 0; i < _objects.length; i++)
-			{
-				_objects[i].update();
-				_objects[i].checkRange(_rect);
-			}
-			return pushAllObjects(minDistance);
-		}
-		
-		public function pushObjects(obj1:LifeForm, obj2:LifeForm, minDistanse:Number):Boolean
-		{
-			var dist:Point = new Point();
-			dist.x = obj1.x - obj2.x;
-			dist.y = obj1.y - obj2.y;
-			var radius:Number = obj1.radius + obj2.radius;
-			
-			var length: Number = dist.x * dist.x + dist.y * dist.y - minDistanse; 
-			
-			//length = Math.min(length, minDistanse);
 
-			if (length < radius * radius)
-			{
-				dist.normalize(0.5);
-				//AB *= (float)((r - Math.Sqrt(d)) * 0.5f);
-				obj2.x -= dist.x;
-				obj2.y -= dist.y;
-				obj1.x += dist.x;
-				obj1.y += dist.y;
-				return true;	
-			}
-			return false;
-		}
-		
-		public function clearObjects():void
-		{
-			_objects = new Vector.<LifeForm>();
-		}
-		
-		public function pushAllObjects(minDistance:Number):Boolean
-		{
-			var pushed:Boolean = false;
-			var objLength:uint = _objects.length;
-			
-			for (var i:uint = 0; i < objLength - 1; i++)
-			{
-				for (var j:uint = i + 1; j < objLength; j++)
-				{
-					if (pushObjects(_objects[i], _objects[j], minDistance))
-						pushed = true;
-				}
-			}
-			return pushed;
-		}
-		
 		public function detectCollision(obj1:LifeForm, obj2:LifeForm):int
 		{
 			var distance:Point = collision(obj1, obj2);
@@ -147,6 +136,7 @@ package
 						obj1.food += obj2.food;
 						obj1.food += obj2.volume;
 						obj2.food = 0;
+						obj2.isDead = true;
 						return -1;
 					}else {
 						if (obj2.food > 0){
@@ -164,6 +154,7 @@ package
 						obj2.food += obj1.food;
 						obj2.food += obj1.volume;
 						obj1.food = 0;
+						obj1.isDead = true;
 						return 1;
 					}else {
 						if (obj1.food > 0){
@@ -179,13 +170,85 @@ package
 				}
 			}
 			return 0;
-			//obj2.parent.setChildIndex(obj2, obj2.parent.numChildren - 1);
-			//S *= 0.9;
-			//S2 = totalS - S - S2;
-			//
-			//
 		}
 		
+		
+		
+		public function clearObjects():void
+		{
+			_objects = new Vector.<LifeForm>();
+		}
+		
+		public function placeBOWithoutIntersections(minDistance:Number):void
+		{
+			for (var i:int = _newObjects.length - 1; i >= 0; i--)
+			{
+				_newObjects[i].checkRange(_rect);
+				for (var j:int = 0; j < _objects.length; j++)
+					if (!pushObjects(_newObjects[i], _objects[j], 50, true, false))
+					{
+						var lifeForm:LifeForm = _newObjects.splice(i, 1)[0];
+						_objects.push(lifeForm);
+						lifeForm.radius = 1;
+						lifeForm.food += 100 + Math.random() * 3000;
+						break;
+					}	
+			}
+		}
+		
+		public function placeObjectsWithoutIntersections(minDistance:Number):Boolean
+		{
+			for (var i:uint = 0; i < _objects.length; i++)
+			{
+				_objects[i].update();
+				_objects[i].checkRange(_rect);
+			}
+			return pushAllObjects(minDistance);
+		}
+		
+		public function pushObjects(obj1:LifeForm, obj2:LifeForm, minDistanse:Number, pushFirst:Boolean = true, pushSecond:Boolean = true):Boolean
+		{
+			var dist:Point = new Point();
+			dist.x = obj1.x - obj2.x;
+			dist.y = obj1.y - obj2.y;
+			var radius:Number = obj1.radius + obj2.radius;
+			
+			var length: Number = dist.x * dist.x + dist.y * dist.y - minDistanse; 
+
+			if (length < radius * radius)
+			{
+				dist.normalize(0.5);
+				if (pushSecond)
+				{
+					obj2.x -= dist.x;
+					obj2.y -= dist.y;
+				}
+				if (pushFirst)
+				{
+					obj1.x += dist.x;
+					obj1.y += dist.y;
+				}
+				return true;	
+			}
+			return false;
+		}
+		
+		public function pushAllObjects(minDistance:Number):Boolean
+		{
+			var pushed:Boolean = false;
+			var objLength:uint = _objects.length;
+			
+			for (var i:uint = 0; i < objLength - 1; i++)
+			{
+				for (var j:uint = i + 1; j < objLength; j++)
+				{
+					if (pushObjects(_objects[i], _objects[j], minDistance))
+						pushed = true;
+				}
+			}
+			return pushed;
+		}
+
 		public function sort():void
 		{
 			var compare:Function = function(obj1:LifeForm, obj2:LifeForm):Number
