@@ -6,6 +6,12 @@ package
 	 */
 	public class Settings 
 	{
+		public static const PLACING:int = 0;
+		public static const PLAYING:int = 1;
+		public static const WIN:int = 2;
+		public static const LOOSE:int = 3;
+		public static const WIN_VOLUME:int = 300 * 300 * Math.PI;
+		
 		private var _minColor:uint, _maxColor:uint, _playerColor:uint, _enemyNumber:uint;
 		private var _width:uint, _height:uint;
 		private static var settings : Settings = new Settings();

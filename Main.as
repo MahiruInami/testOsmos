@@ -104,8 +104,6 @@ package
 			_iteration = 0;
 			_manager = new ObjectManager();
 			_manager.initGame();
-			//_player = _manager.generateCircles(Settings.getSettings().minColor, Settings.getSettings().maxColor, 15, 30, 20, 1);
-			//Settings.getSettings().enemyNumber);
 			_pushing = true;
 			addChild(_manager);
 			addEventListener(Event.ENTER_FRAME, gameLoop);
@@ -139,36 +137,24 @@ package
 			_manager.update();
 			if (_mouseDown)
 				_manager.addForceToPlayer(new Point(stage.mouseX, stage.mouseY));
-			//if (_pushing) {
-				//place objects without intersections when game starts
-				//_pushing = _manager.pushCircles(20);
-				//_manager.calculatePositions();
-			//}
-			//else {
-				//every 50 eteration add new enemy object to game
-				//and try to place it, when it haven't intersections to others
-				//_iteration++;
-				//if (_iteration > 50) { /*_manager.spawnObject();*/ _iteration = 0; _player.eat(_player.volume); }
-				//add force to player object
-				//addForce();
-				//update objects state
-				//_manager.simulate();
-			//}	
-			//get game state
-			//var gameState:int = _manager.getGameState;
-			//if (gameState > 0) {
+			if (_manager.gameState == Settings.WIN)
+			{
 				//clean up and open gameOver or victory screen
-				//removeEventListener(Event.ENTER_FRAME, gameLoop);
-				//stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
-				//stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseUp);
+				removeEventListener(Event.ENTER_FRAME, gameLoop);
+				stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
+				stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseUp);
 				//this.removeChildren();
-				//if(gameState == 1)
-					//initGameOverScreen();
-				//else
-					//initVictoryScreen();
-			//}
-			//_particleManager.update();
-			//_particleManager.addCircleParticle(Math.random() * _bitData.width, Math.random() * _bitData.height, 0x00FFFF * ( 1 - Math.random() * 0.5));
+				_manager = null;
+				initVictoryScreen();
+			}else
+			if (_manager.gameState == Settings.LOOSE) {
+				removeEventListener(Event.ENTER_FRAME, gameLoop);
+				stage.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
+				stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseUp);
+				//this.removeChildren();
+				_manager = null;
+				initGameOverScreen();
+			}
 		}
 		
 		/**

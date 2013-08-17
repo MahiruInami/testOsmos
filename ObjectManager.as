@@ -13,6 +13,9 @@
 		protected var _bitmap:Bitmap;
 		protected var _player:LifeForm;
 		protected var _gameState:int;
+		protected var _counter:int;
+		
+		public function get gameState():int { return _gameState; }
 		
 		public function ObjectManager()
 		{
@@ -23,6 +26,7 @@
 			addChild(_bitmap);
 			_player = null;
 			_gameState = -1;
+			_counter = 0;
 		}
 		
 		public function addLifeForm():void
@@ -38,7 +42,7 @@
 			//_player.x = 300;
 			//_player.y = 200;
 			//_player.speedY = 0.5;
-			_player.food += 1;
+			//_player.food += 1;
 		}
 		
 		public function addForceToPlayer(force:Point):void
@@ -63,18 +67,7 @@
 			initPlayerLifeForm();
 			_gameState = 0;
 		}
-		
-		//public function addObject(lifeForm:LifeForm):void
-		//{
-			//if (lifeForm == null)
-				//return;
-			//_objects.push(lifeForm);
-			//_quadtree.addObject(lifeForm);
-			//if (lifeForm.isPlayer)
-				//_player = lifeForm;
-			//addChild(lifeForm);
-		//}
-		//
+
 		//public function spawnObject():void
 		//{
 			//var lifeForm:LifeForm = new LifeForm(Settings.getSettings().minColor, Settings.getSettings().maxColor, _player.radius - 2 + Math.random() * (_player.radius + 4));
@@ -153,50 +146,28 @@
 			//}
 			//return _player;
 		//}
-		//
-		//public function pushCircles(minDistance:Number):Boolean
-		//{
-			
-		//}
 
-		
-		//public function calculatePositions():void
-		//{
-			//for (var i:int = 0; i < _objects.length; i++)
-			//{
-				//_objects[i].calculate();
-				//_objects[i].calculateColor(_player);
-				//placeObjectOnMap(_objects[i]);
-			//}
-		//}
-		
 		public function update():void
 		{
-			if (_gameState == 0)
+			if (_gameState == Settings.PLACING)
 			{
-				if (!_objectController.placeObjectsWithoutIntersections(50)) _gameState = 1;
+				if (!_objectController.placeObjectsWithoutIntersections(1000)) _gameState = Settings.PLAYING;
 				
-			}else if (_gameState == 1)
+			}else if (_gameState == Settings.PLAYING)
 			{
+				if (_counter > 50)
+				{
+					_objectController.createBufferLifeForm();
+					_counter = 0;
+				}
 				_objectController.update();
+				_objectController.updateEnemyColors(_player);
+				if (_player.isDead) _gameState = Settings.LOOSE;
+				if (_player.volume > Settings.WIN_VOLUME) _gameState = Settings.WIN;
+				_counter += 1;
 			}
 			var bitData:BitmapData = _objectController.draw();
 			_bitmap.bitmapData = bitData;
-			/*if (_gameState)
-				return;
-			calculatePositions();
-			pushNewObjects();
-			sort();
-			if (_player == null || _player.parent == null)
-			{
-				_gameState = 1;
-				trace("null");
-			}
-			if (_winingVolume < _player.volume)
-			{
-				_gameState = 2;
-				trace("low");
-			}*/
 		}
 	}
 }
