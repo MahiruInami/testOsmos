@@ -70,14 +70,16 @@ package
 			_mouseDown = false;
 			
 			_startButton = new Button();
-			_startButton.x = stage.stageWidth / 2 - _startButton.width / 2;
-			_startButton.y = stage.stageHeight / 2;
+			_startButton.x = Settings.getSettings().width / 2 - _startButton.width / 2;
+			_startButton.y = Settings.getSettings().height / 2;
 			_startButton.addEventListener(MouseEvent.CLICK, startNewGame);
 			addChild(_startButton);
 			
 			var _logo:* = new initClass();
-			_logo.x = stage.stageWidth / 2 - _logo.width / 2;
-			_logo.y = stage.stageHeight / 8;
+			_logo.width = Settings.getSettings().width / 2;
+			_logo.scaleY = _logo.scaleX;
+			_logo.x = Settings.getSettings().width / 2 - _logo.width / 2;
+			_logo.y = Settings.getSettings().height / 8;
 			addChild(_logo);
 			
 			_particleManager = new ParticleController();
@@ -162,7 +164,7 @@ package
 			//update particles
 			//and add new particle
 			_particleManager.update();
-			_particleManager.addCircleParticle(Math.random() * 1200, Math.random() * 800, 0x00FFFF * ( 1 - Math.random() * 0.5));
+			_particleManager.addCircleParticle(Math.random() * Settings.getSettings().width, Math.random() * Settings.getSettings().height, 0x00FFFF * ( 1 - Math.random() * 0.5));
 		}
 		
 		/**
