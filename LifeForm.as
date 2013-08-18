@@ -3,6 +3,7 @@
 	import flash.display.BitmapData;
 	import flash.display.Shape;
 	import flash.filters.GlowFilter;
+	import flash.geom.ColorTransform;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
@@ -28,30 +29,29 @@
 	{
 		protected static const GROW_SPEED:Number = 0.96;
 		
-		public var x:Number;
+		public var x:Number; //coordinates
 		public var y:Number;
 		
-		public var radius:Number;
-		public var forceX:Number;
+		public var radius:Number; // body radius, dont change it inside
+		public var forceX:Number; // how fast speed changes
 		public var forceY:Number;
-		public var speedX:Number;
+		public var speedX:Number; //body movement speed
 		public var speedY:Number;
-		public var volume:Number;
-		public var food:Number;
-		public var friction:Number;
-		public var bitmapData:BitmapData = new BitmapData(20, 20);
-		public var rect:Rectangle = new Rectangle();
-		public var isDead:Boolean = false;
-		public var isRandomMovement:Boolean = false;
+		public var volume:Number; // body volume radius^2 * PI, dont change it inside
+		public var food:Number; // food increase or decrease volume
+		public var friction:Number; // movement friction
+		public var bitmapData:BitmapData = new BitmapData(20, 20); // body image
+		public var rect:Rectangle = new Rectangle(); // body AABB
+		public var isDead:Boolean = false; // is body dead?
+		public var isRandomMovement:Boolean = false; // shall body move randomly?
 		
-		protected var _color:uint;
-		protected var shape:Shape = new Shape();
-		protected var glow:GlowFilter = new GlowFilter();
-		protected var matrix:Matrix = new Matrix();
-		protected var oldRadius:Number;
+		protected var _color:uint; // body color
+		protected var shape:Shape = new Shape(); // for draw body image
+		protected var glow:GlowFilter = new GlowFilter(); // glow effect
+		protected var _matrix:Matrix = new Matrix();
 		
-		public function get color():uint { return _color; }
-		public function set color(newColor:uint):void { _color = newColor; changeBitmapData(); }
+		public function get color():uint { return _color; } 
+		public function set color(newColor:uint):void { _color = newColor; changeBitmapData(); } // if color changed redraw image
 		
 		
 		public function LifeForm()
@@ -59,12 +59,14 @@
 			init();
 		}
 		
+		/**
+		 * set default values
+		 */
 		public function init():void
 		{
 			x = 0;
 			y = 0;
 			radius = 20;
-			oldRadius = radius;
 			friction = 0.98;
 			forceX = 0;
 			forceY = 0;
@@ -93,12 +95,17 @@
 			x += speedX;
 			y += speedY;
 			
+			//speed decreased by friction
 			speedX *= friction;
 			speedY *= friction;
 		}
 		
+		/**
+		 * increase or decrease radius when food isn't 0
+		 */
 		public function grow():void
 		{
+			//is amount of food > 0.1, it's to reduce grow iterations
 			if (Math.abs(food) > 0.1)
 			{
 				var growing:Number = food - food * GROW_SPEED;
@@ -110,17 +117,22 @@
 					food *= GROW_SPEED;
 					radius = Math.sqrt((volume + growing) / Math.PI);
 				}
+				//calculate new volume
 				volume = radius * radius * Math.PI
-				rect.width = (radius << 1) + 30;
+				rect.width = (radius << 1) + 30; // get new AABB
 				rect.height = (radius << 1) + 30;
-				changeBitmapData();
+				changeBitmapData(); // redraw
 			}
 		}
 		
+		/**
+		 * update lifeForm parameters
+		 */
 		public function update():void
 		{
 			updatePositions();
 			grow();
+			//if body move randomly, add random force
 			if (isRandomMovement)
 			{
 				forceX += (-1 + Math.random() * 2) * 0.05;
@@ -131,30 +143,41 @@
 		protected function changeBitmapData():void
 		{
 			if (isNaN(radius)) return;
+			//this is bottleneck
+			//we need redraw object every time when it change
+			//size or player object change size
 			shape.graphics.clear();
 			shape.graphics.beginFill(color, 1);
 			shape.graphics.drawCircle(radius + 15, radius + 15, radius);
 			shape.graphics.endFill();
-			shape.filters = [ glow ];
-			bitmapData.lock();
+			
+			
 			try {
+				
 				//if ((radius << 1) + 30 > rect.width)
 				//{
 					//rect.width = (radius << 2);
 					//rect.height = (radius << 2);
-					bitmapData = new BitmapData(rect.width, rect.height, true, 0x000000);
-				//}
+					//if(radius * 2 + 30 > rect.width)
+				bitmapData = new BitmapData(rect.width, rect.height, true, 0x000000);
+				bitmapData.lock();
 				bitmapData.fillRect(rect, 0x00000000);
 			}
 			catch (e:Error)
 			{
 				bitmapData = new BitmapData(1, 1, true, 0x000000);
+				bitmapData.lock();
 			}
+			
 			bitmapData.draw(shape);
+			bitmapData.applyFilter(bitmapData, rect, new Point(), glow);
 			bitmapData.unlock();
-			//bitmapData.copyPixels(shape
 		}
 		
+		/**
+		 * check intersections with screen
+		 * @param	rect
+		 */
 		public function checkRange(rect:Rectangle):void
 		{
 			if (x >= rect.width - radius)

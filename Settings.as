@@ -1,5 +1,6 @@
 package  
 {
+	import flash.geom.Rectangle;
 	/**
 	 * ...
 	 * @author 123
@@ -20,6 +21,8 @@ package
 		public function get maxColor():uint { return _maxColor; }
 		public function get playerColor():uint { return _playerColor; }
 		public function get enemyNumber():uint { return _enemyNumber; }
+		public function get width():uint { return _width; }
+		public function get height():uint { return _height; }
 		
 		public function Settings() 
 		{
@@ -29,7 +32,7 @@ package
 			_minColor = 0x0000FF;
 			_maxColor = 0xFF0000;
 			_playerColor = 0x00FF00;
-			_enemyNumber = 120;
+			_enemyNumber = 70;
 		}
 		
 		public static function getSettings() : Settings{

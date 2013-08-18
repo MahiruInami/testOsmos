@@ -15,10 +15,11 @@ package
 	 */
 	public class LifeFormController
 	{
-		protected var _objects:Vector.<LifeForm>;
-		protected var _newObjects:Vector.<LifeForm>;
-		protected var _bitmapData:BitmapData;
-		protected var _rect:Rectangle;
+		protected var _objects:Vector.<LifeForm>; // objects pool
+		protected var _newObjects:Vector.<LifeForm>; // new objects buffer
+		protected var _bitmapData:BitmapData; // game field image
+		protected var _rect:Rectangle; // game field rectangle
+		//protected var _tree:QuadTree;
 		
 		public function LifeFormController()
 		{
@@ -29,40 +30,67 @@ package
 		{
 			_objects = new Vector.<LifeForm>();
 			_newObjects = new Vector.<LifeForm>();
-			_rect = new Rectangle(0, 0, 1200, 800);
+			_rect = new Rectangle(0, 0, Settings.getSettings().width, Settings.getSettings().height);
 			_bitmapData = new BitmapData(_rect.width, _rect.height, true, 0x000000);
 		}
 		
+		/**
+		 * update object positions, solve collisions
+		 * change colors, add new objects
+		 * @param	player
+		 */
 		public function update(player:LifeForm):void
 		{
 			simulate(player);
-			placeBOWithoutIntersections(4000);
+			//add new objects
+			placeBOWithoutIntersections(100);
 		}
 		
-		public function updateColors(obj1:LifeForm, obj2:LifeForm):void
+		/**
+		 * update obj2 color using diffecrence
+		 * through obj1.radius amd obj2.radius
+		 * @param	obj1
+		 * @param	obj2
+		 */
+		public function updateColors(obj1:LifeForm, obj2:LifeForm):Boolean
 		{
+			//color mix percent
 			var multiplayer:Number;
 			if (obj1.radius > (obj2.radius << 1))
 				multiplayer = 1.0;
 			else if ((obj1.radius << 1) < obj2.radius)
 				multiplayer = 0.0;
 			else
-				multiplayer = 1.5 - obj2.radius / obj1.radius;
+				multiplayer = 1.5 - obj2.radius / obj1.radius; //get multiplayer, it's between 0.1 and 0.9 
 			var newColor:uint = getColorSum(Settings.getSettings().minColor, Settings.getSettings().maxColor, multiplayer, 1 - multiplayer);
-			if (newColor == obj2.color)
-				return;
+			if (newColor == obj2.color) return false;
 			obj2.color = newColor;
+			return true;
 		}
 		
+		/**
+		 * sum of colors
+		 * @param	color1
+		 * @param	color2
+		 * @param	color1Percent - percent of first color
+		 * @param	color2Percent - percent of second color
+		 * @return return mix of colors
+		 */
 		protected function getColorSum(color1:uint, color2:uint, color1Percent:Number, color2Percent:Number):uint
 		{
+			//translate colors in rgb and get mix
 			var r:Number = Math.min((color1 >> 16) * color1Percent + (color2 >> 16) * color2Percent, 255);
 			var g:Number = Math.min(((color1 & 0x00FF00) >> 8) * color1Percent + ((color2 & 0x00FF00) >> 8) * color2Percent, 255);
 			var b:Number = Math.min((color1 & 0x0000FF) * color1Percent + (color1 & 0x0000FF) * color2Percent, 255);
+			//get new color by r,g and b components
 			var sum:int = (r << 16) + (g << 8) + b;
 			return sum;
 		}
 
+		/**
+		 * draw objects to bitmapData
+		 * @return
+		 */
 		public function draw():BitmapData
 		{
 			_bitmapData.lock();
@@ -70,6 +98,8 @@ package
 			for (var i:int = _objects.length - 1; i >= 0; i--)
 			{
 				var obj:LifeForm = _objects[i];
+				//dont draw body if it's dead
+				if (obj.isDead) continue;
 				_bitmapData.copyPixels(obj.bitmapData, obj.rect, new Point(obj.x - obj.radius - 15, obj.y - obj.radius - 15), null, null, true);
 				
 			}
@@ -77,13 +107,19 @@ package
 			return _bitmapData;
 		}
 		
+		/**
+		 * add new life form
+		 * @return return created object
+		 */
 		public function createLifeForm():LifeForm
 		{
 			var lifeForm:LifeForm = new LifeForm();
-			lifeForm.x = Math.random() * _rect.width;
-			lifeForm.y = Math.random() * _rect.height;
-			//lifeForm.isRandomMovement = true;
+			//get random coordinates
+			lifeForm.x = Math.random() * Settings.getSettings().width;
+			lifeForm.y = Math.random() * Settings.getSettings().height;
+			//add new object to objects pool
 			_objects.push(lifeForm);
+			lifeForm.isRandomMovement = true;
 			return lifeForm;
 		}
 		
@@ -94,8 +130,8 @@ package
 				lifeForm = _newObjects.shift();
 			else
 				lifeForm = new LifeForm();
-			lifeForm.x = Math.random() * _rect.width;
-			lifeForm.y = Math.random() * _rect.height;
+			lifeForm.x = Math.random() * Settings.getSettings().width;
+			lifeForm.y = Math.random() * Settings.getSettings().height;
 			lifeForm.isRandomMovement = true;
 			_newObjects.push(lifeForm);
 		}
@@ -103,7 +139,6 @@ package
 		public function collision(obj1:LifeForm, obj2:LifeForm):Point
 		{
 			var distance:Point = new Point(obj1.x - obj2.x, obj1.y - obj2.y);
-			//var distance:Number = Math.sqrt(Math.pow(this.x - lifeForm.x, 2) + Math.pow(this.y - lifeForm.y, 2));
 			if (distance.length < obj1.radius + obj2.radius)
 			{
 				return distance;
@@ -188,7 +223,7 @@ package
 			{
 				_newObjects[i].checkRange(_rect);
 				for (var j:int = 0; j < _objects.length; j++)
-					if (!pushObjects(_newObjects[i], _objects[j], 50, true, false))
+					if (!pushObjects(_newObjects[i], _objects[j], minDistance, true, false))
 					{
 						var lifeForm:LifeForm = _newObjects.splice(i, 1)[0];
 						_objects.push(lifeForm);
@@ -277,95 +312,81 @@ package
 			if(i < max) qSort(obj, i, max);
 		}
 
-		protected function resolveCollisionBruteForce(player:LifeForm):void
-		{
-			var i:int, j:int;
-			for (i = 0; i < _objects.length - 1; i++)
-			{
-				_objects[i].update();
-				_objects[i].checkRange(_rect);
-				if (_objects[i] != player)
-					updateColors(player, _objects[i]);
-					
-				for (j = i + 1; j < _objects.length; j++)
-				{
-					var obj1:LifeForm = _objects[i];
-					var obj2:LifeForm = _objects[j];
-					var collision:int = detectCollision(obj1, obj2);
-					if (collision == -1)
-					{
-						_objects.splice(i, 1);
-						i--;
-						break;
-					}
-					else if (collision == 1)
-					{
-						_objects.splice(j, 1);
-						j--;
-						continue;
-					}
-				}
-			}
-		}
-		
 		protected function simulate(player:LifeForm):void
 		{
-			var i:int, j:int, indexCorrection:int = 0;
+			var i:int, j:int;
+			//array with body's intervals;
 			var intervals:Array = [];
-			var dist:Point = new Point();
 			var radius:Number, length:Number;
-			//qsort is much faster than default vector.sort
-			qSort(_objects, 0, _objects.length - 1);
-			for (i = 0; i < _objects.length; i++)
+			//var time:Number = getTimer();
+			//calculate new positions and forces for bodys
+			//and change its color
+			length = _objects.length; // this away faster
+			for (i = 0; i < length; i++)
 			{
 				_objects[i].update();
 				_objects[i].checkRange(_rect);
 				if (_objects[i] != player)
 					updateColors(player, _objects[i]);
-
-				var newInterval:Interval = new Interval();
-				newInterval.b = _objects[i].x - _objects[i].radius;
-				newInterval.e = _objects[i].x + _objects[i].radius;
-				newInterval.root = _objects[i];
-				if (intervals.length == 0)
+			}
+			//trace(getTimer() - time);
+			//qsort is much faster than default vector.sort
+			qSort(_objects, 0, length - 1);
+			/**
+			 * SAP(sweep and prune broadphase algorithm
+			 * first, we need sorted body;s array
+			 * i sorted by coordinate x minus radius
+			 * second, for each body in  array we created intervals
+			 * and if we add new interval while previous interval exist in intervals pool
+			 * it means that object may intersect and we need to check...
+			 */
+			for (i = 0; i < _objects.length; i++)
+			{
+				var newInterval:Interval = new Interval(); // create new interval
+				newInterval.b = _objects[i].x - _objects[i].radius; // interval begin
+				newInterval.e = _objects[i].x + _objects[i].radius; // interval end
+				newInterval.root = _objects[i]; // owner of interval
+				if (intervals.length == 0) // if interval's pool is empy just add new interval
 					intervals.push(newInterval);
 				else
 				{
-					for (j = intervals.length - 1; j >= 0; j--)
+					for (j = intervals.length - 1; j >= 0; j--) // check new interval with other interval for collision
 					{
-						if (intervals[j].e < newInterval.b)
-						{
+						if (intervals[j].e < newInterval.b) // if begining of new interval greater than
+						{									// other interval ending than delete it(intervals sorted...)
 							intervals.splice(j, 1);
 							continue;
 						}
 						else
 						{
-							var obj1:LifeForm = intervals[j].root;
+							var obj1:LifeForm = intervals[j].root; 	
 							var obj2:LifeForm = newInterval.root;
-							var collision:int = detectCollision(obj1, obj2);
-							if (collision == 1)
+							var collision:int = detectCollision(obj1, obj2); // check for objects intersection
+							if (collision == 1)								
 							{
-								_objects.splice(_objects.indexOf(intervals[j].root), 1);
+								_objects.splice(_objects.indexOf(intervals[j].root), 1); // if first object is dead delete it
 								intervals.splice(j, 1);
 								i--;
 								continue;
 							}
 							else if (collision == -1)
 							{
-								_objects.splice(_objects.indexOf(newInterval.root), 1);
+								_objects.splice(_objects.indexOf(newInterval.root), 1); // if second object is dead delete it
 								i--;
 								break;
 							}
 						}
 					}
-					intervals.push(newInterval);
+					intervals.push(newInterval); // add new interval to the pool
 				}
 			}
+			//trace(getTimer() - time);
 		}
 	}
 
 }
 
+// additional class for SAP
 class Interval
 {
 	public var b:Number, e:Number, index:int;
