@@ -1,0 +1,1 @@
+user: { color: 0 1.0 0} enemy: { color1: 0.0 0.0 1.0, color2: 1.0 0.0 0.0, enemyNumber: 100 }
