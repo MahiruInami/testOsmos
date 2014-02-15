@@ -5,10 +5,6 @@ package
 	
 	
 	
-	/**
-	 * ...
-	 * @author 123
-	 */
 	public class Button extends SimpleButton
 	{
 		private var upColor:uint = 0xFFCC00;

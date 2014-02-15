@@ -7,23 +7,6 @@
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
-	//import flash.display.Shape;
-	//import flash.display.Sprite;
-	//import flash.events.Event;
-	//import flash.filters.BitmapFilter;
-	//import flash.filters.BlurFilter;
-	//import flash.filters.DisplacementMapFilter;
-	//import flash.filters.GlowFilter;
-	//import flash.filters.GradientGlowFilter;
-	//import flash.geom.Rectangle;
-	//import flash.system.ImageDecodingPolicy;
-	//import fl.motion.Color;
-	//import flash.geom.ColorTransform;
-	//import flash.geom.Point;
-	//import flash.display.Bitmap;
-	//import flash.geom.Point;
-	
-	//import flash.
 	
 	public class LifeForm
 	{
@@ -154,11 +137,6 @@
 			
 			try {
 				
-				//if ((radius << 1) + 30 > rect.width)
-				//{
-					//rect.width = (radius << 2);
-					//rect.height = (radius << 2);
-					//if(radius * 2 + 30 > rect.width)
 				bitmapData = new BitmapData(rect.width, rect.height, true, 0x000000);
 				bitmapData.lock();
 				bitmapData.fillRect(rect, 0x00000000);
